@@ -221,3 +221,15 @@ func HostFirstIPv6() (string, error) {
 
 	return "", ErrNotFound
 }
+
+// FreePort returns a free port.
+func FreePort() (port int, err error) {
+	if a, err := net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
+		var l *net.TCPListener
+		if l, err = net.ListenTCP("tcp", a); err == nil {
+			defer l.Close()
+			return l.Addr().(*net.TCPAddr).Port, nil
+		}
+	}
+	return
+}

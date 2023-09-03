@@ -85,3 +85,11 @@ func TestHostFirstIPv6(t *testing.T) {
 	assert.NotEmpty(t, ip)
 	t.Logf("ip: %v", ip)
 }
+
+func TestFreePort(t *testing.T) {
+	port, err := FreePort()
+	require.NoError(t, err)
+
+	assert.Gt(t, port, 0)
+	assert.Lt(t, port, 65536)
+}
