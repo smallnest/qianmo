@@ -8,8 +8,8 @@ import (
 	"golang.org/x/net/nettest"
 )
 
-// FindInterfaceByName returns the interface with the given name.
-func FindInterfaceByName(name string) (*net.Interface, error) {
+// InterfaceByName returns the interface with the given name.
+func InterfaceByName(name string) (*net.Interface, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -24,8 +24,8 @@ func FindInterfaceByName(name string) (*net.Interface, error) {
 	return nil, ErrNotFound
 }
 
-// FindInterfaceByIP returns the interface with the given IP address.
-func FindInterfaceByIP(ip string) (*net.Interface, error) {
+// InterfaceByIP returns the interface with the given IP address.
+func InterfaceByIP(ip string) (*net.Interface, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -48,8 +48,8 @@ func FindInterfaceByIP(ip string) (*net.Interface, error) {
 	return nil, ErrNotFound
 }
 
-// FindInterfaceByMAC returns the interface with the given MAC address.
-func FindInterfaceByMAC(mac net.HardwareAddr) (*net.Interface, error) {
+// InterfaceByMAC returns the interface with the given MAC address.
+func InterfaceByMAC(mac net.HardwareAddr) (*net.Interface, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -64,14 +64,14 @@ func FindInterfaceByMAC(mac net.HardwareAddr) (*net.Interface, error) {
 	return nil, ErrNotFound
 }
 
-// FindLoopbackInterface returns the loopback interface.
-func FindLoopbackInterface() (*net.Interface, error) {
+// LoopbackInterface returns the loopback interface.
+func LoopbackInterface() (*net.Interface, error) {
 	return nettest.LoopbackInterface()
 }
 
-// FindMacByIP returns the MAC address of the interface with the given IP address.
-func FindMacByIP(ip string) (net.HardwareAddr, error) {
-	iface, err := FindInterfaceByIP(ip)
+// MacByIP returns the MAC address of the interface with the given IP address.
+func MacByIP(ip string) (net.HardwareAddr, error) {
+	iface, err := InterfaceByIP(ip)
 	if err != nil {
 		return nil, err
 	}
@@ -79,9 +79,9 @@ func FindMacByIP(ip string) (net.HardwareAddr, error) {
 	return iface.HardwareAddr, nil
 }
 
-// FindMacByName returns the MAC address of the interface with the given name.
-func FindMacByName(name string) (net.HardwareAddr, error) {
-	iface, err := FindInterfaceByName(name)
+// MacByName returns the MAC address of the interface with the given name.
+func MacByName(name string) (net.HardwareAddr, error) {
+	iface, err := InterfaceByName(name)
 	if err != nil {
 		return nil, err
 	}
@@ -89,9 +89,9 @@ func FindMacByName(name string) (net.HardwareAddr, error) {
 	return iface.HardwareAddr, nil
 }
 
-// FindAddrs returns the IP addresses of the interface with the given iface 	name.
-func FindAddrs(name string) []string {
-	iface, err := FindInterfaceByName(name)
+// Addrs returns the IP addresses of the interface with the given iface 	name.
+func Addrs(name string) []string {
+	iface, err := InterfaceByName(name)
 	if err != nil {
 		return nil
 	}
@@ -111,8 +111,8 @@ func FindAddrs(name string) []string {
 	return ips
 }
 
-// FindNonLoopbackAddrs returns the non-loopback IP addresses of interfaces.
-func FindNonLoopbackAddrs() []string {
+// NonLoopbackAddrs returns the non-loopback IP addresses of interfaces.
+func NonLoopbackAddrs() []string {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return nil
@@ -139,8 +139,8 @@ func FindNonLoopbackAddrs() []string {
 	return ips
 }
 
-// FindLoopbackAddrs returns the loopback IP addresses of interfaces.
-func FindLoopbackAddrs() []string {
+// LoopbackAddrs returns the loopback IP addresses of interfaces.
+func LoopbackAddrs() []string {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return nil
@@ -167,8 +167,8 @@ func FindLoopbackAddrs() []string {
 	return ips
 }
 
-// FindHostIP returns the IP addresses of the host.
-func FindHostIP() ([]string, error) {
+// HostIP returns the IP addresses of the host.
+func HostIP() ([]string, error) {
 	name, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -177,8 +177,8 @@ func FindHostIP() ([]string, error) {
 	return net.LookupHost(name)
 }
 
-// FindHostFirstIPv6 returns the first non-loopback IPv4 address of the host.
-func FindHostFirstIPv4() (string, error) {
+// HostFirstIPv6 returns the first non-loopback IPv4 address of the host.
+func HostFirstIPv4() (string, error) {
 	name, err := os.Hostname()
 	if err != nil {
 		return "", err
@@ -199,8 +199,8 @@ func FindHostFirstIPv4() (string, error) {
 	return "", ErrNotFound
 }
 
-// FindHostFirstIPv6 returns the first non-loopback IPv6 address of the host.
-func FindHostFirstIPv6() (string, error) {
+// HostFirstIPv6 returns the first non-loopback IPv6 address of the host.
+func HostFirstIPv6() (string, error) {
 	name, err := os.Hostname()
 	if err != nil {
 		return "", err
