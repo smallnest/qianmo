@@ -3,6 +3,7 @@ module github.com/smallnest/qianmo
 go 1.21.0
 
 require (
+	github.com/google/gopacket v1.1.19
 	github.com/gookit/goutil v0.6.12
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.14.0

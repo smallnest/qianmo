@@ -1,7 +1,6 @@
 package qianmo
 
 import (
-	"net"
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
@@ -42,32 +41,43 @@ func TestFindInterfaceByName(t *testing.T) {
 	assert.NotEmpty(t, iface)
 }
 
-// FindAddrs returns the IP addresses of the interface with the given iface 	name.
-func FindAddrs(name string) []string {
-	iface, err := FindInterfaceByName(name)
-	if err != nil {
-		return nil
-	}
-
-	addrs, err := iface.Addrs()
-	if err != nil {
-		return nil
-	}
-
-	var ips []string
-	for _, addr := range addrs {
-		if ipNet, ok := addr.(*net.IPNet); ok {
-			ips = append(ips, ipNet.IP.String())
-		}
-	}
-
-	return ips
-}
-
 func TestFindAddrs(t *testing.T) {
 	lookback, err := FindLoopbackInterface()
 	require.NoError(t, err)
 
 	addrs := FindAddrs(lookback.Name)
 	assert.Gt(t, len(addrs), 0)
+}
+
+func TestFindNonLoopbackAddrs(t *testing.T) {
+	addrs := FindNonLoopbackAddrs()
+	assert.NotEmpty(t, addrs)
+	t.Logf("addrs: %v", addrs)
+}
+
+func TestFindLoopbackAddrs(t *testing.T) {
+	addrs := FindLoopbackAddrs()
+	assert.NotEmpty(t, addrs)
+	t.Logf("addrs: %v", addrs)
+}
+
+func TestFindHostIP(t *testing.T) {
+	addrs, err := FindHostIP()
+	require.NoError(t, err)
+	assert.NotEmpty(t, addrs)
+	t.Logf("addrs: %v", addrs)
+}
+
+func TestFindHostFirstIPv4(t *testing.T) {
+	ip, err := FindHostFirstIPv4()
+	require.NoError(t, err)
+	assert.NotEmpty(t, ip)
+	t.Logf("ip: %v", ip)
+}
+
+func TestFindHostFirstIPv6(t *testing.T) {
+	ip, err := FindHostFirstIPv6()
+	require.NoError(t, err)
+	assert.NotEmpty(t, ip)
+	t.Logf("ip: %v", ip)
 }

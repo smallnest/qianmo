@@ -2,6 +2,7 @@ package qianmo
 
 import (
 	"net"
+	"os"
 	"strings"
 
 	"golang.org/x/net/nettest"
@@ -86,4 +87,137 @@ func FindMacByName(name string) (net.HardwareAddr, error) {
 	}
 
 	return iface.HardwareAddr, nil
+}
+
+// FindAddrs returns the IP addresses of the interface with the given iface 	name.
+func FindAddrs(name string) []string {
+	iface, err := FindInterfaceByName(name)
+	if err != nil {
+		return nil
+	}
+
+	addrs, err := iface.Addrs()
+	if err != nil {
+		return nil
+	}
+
+	var ips []string
+	for _, addr := range addrs {
+		if ipNet, ok := addr.(*net.IPNet); ok {
+			ips = append(ips, ipNet.IP.String())
+		}
+	}
+
+	return ips
+}
+
+// FindNonLoopbackAddrs returns the non-loopback IP addresses of interfaces.
+func FindNonLoopbackAddrs() []string {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil
+	}
+
+	var ips []string
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			if ipNet, ok := addr.(*net.IPNet); ok {
+				ips = append(ips, ipNet.IP.String())
+			}
+		}
+	}
+
+	return ips
+}
+
+// FindLoopbackAddrs returns the loopback IP addresses of interfaces.
+func FindLoopbackAddrs() []string {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil
+	}
+
+	var ips []string
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagLoopback == 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			if ipNet, ok := addr.(*net.IPNet); ok {
+				ips = append(ips, ipNet.IP.String())
+			}
+		}
+	}
+
+	return ips
+}
+
+// FindHostIP returns the IP addresses of the host.
+func FindHostIP() ([]string, error) {
+	name, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	return net.LookupHost(name)
+}
+
+// FindHostFirstIPv6 returns the first non-loopback IPv4 address of the host.
+func FindHostFirstIPv4() (string, error) {
+	name, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	addrs, err := net.LookupHost(name)
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		ip := net.ParseIP(addr)
+		if ip.To4() != nil && !ip.IsLoopback() {
+			return addr, nil
+		}
+	}
+
+	return "", ErrNotFound
+}
+
+// FindHostFirstIPv6 returns the first non-loopback IPv6 address of the host.
+func FindHostFirstIPv6() (string, error) {
+	name, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	addrs, err := net.LookupHost(name)
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		ip := net.ParseIP(addr)
+
+		if ip.To4() == nil && !ip.IsLoopback() && !strings.HasPrefix(addr, "fe80:") {
+			return addr, nil
+		}
+	}
+
+	return "", ErrNotFound
 }
