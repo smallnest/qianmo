@@ -1,6 +1,7 @@
 package qianmo
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
@@ -77,6 +78,9 @@ func TestHostFirstIPv4(t *testing.T) {
 
 func TestHostFirstIPv6(t *testing.T) {
 	ip, err := HostFirstIPv6()
+	if errors.Is(err, ErrNotFound) {
+		t.Skip(err)
+	}
 	require.NoError(t, err)
 	assert.NotEmpty(t, ip)
 	t.Logf("ip: %v", ip)
