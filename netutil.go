@@ -69,6 +69,25 @@ func LoopbackInterface() (*net.Interface, error) {
 	return nettest.LoopbackInterface()
 }
 
+// NonLoopbackInterfaces returns the non-loopback interfaces.
+func NonLoopbackInterfaces() ([]*net.Interface, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	var ifaces []*net.Interface
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		ifaces = append(ifaces, &iface)
+	}
+
+	return ifaces, nil
+}
+
 // MacByIP returns the MAC address of the interface with the given IP address.
 func MacByIP(ip string) (net.HardwareAddr, error) {
 	iface, err := InterfaceByIP(ip)

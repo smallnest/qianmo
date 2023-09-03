@@ -93,3 +93,10 @@ func TestFreePort(t *testing.T) {
 	assert.Gt(t, port, 0)
 	assert.Lt(t, port, 65536)
 }
+
+func TestNonLoopbackInterfaces(t *testing.T) {
+	ifaces, err := NonLoopbackInterfaces()
+	require.NoError(t, err)
+	assert.NotEmpty(t, ifaces)
+	t.Logf("ifaces: %v", ifaces)
+}
