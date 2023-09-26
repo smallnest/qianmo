@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"golang.org/x/net/bpf"
 )
@@ -41,9 +42,8 @@ func ParseTcpdumpFitlerData(data string) (raws []bpf.RawInstruction) {
 }
 
 // ParseTcpdumpFitlerExpr parses tcpdump filter to bpf.RawInstruction.
-func ParseTcpdumpFitlerExpr(expr string) (raws []bpf.RawInstruction, err error) {
-	var h = &pcap.Handle{}
-	insts, err := h.CompileBPFFilter(expr)
+func ParseTcpdumpFitlerExpr(linkType layers.LinkType, expr string) (raws []bpf.RawInstruction, err error) {
+	insts, err := pcap.CompileBPFFilter(linkType, 1, expr)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +81,8 @@ func CreateInstructionsFromData(data string) string {
 }
 
 // CreateInstructionsFromExpr creates bpf.Instruction from tcpdump filter expression.
-func CreateInstructionsFromExpr(expr string) string {
-	raws, _ := ParseTcpdumpFitlerExpr(expr)
+func CreateInstructionsFromExpr(linkType layers.LinkType, expr string) string {
+	raws, _ := ParseTcpdumpFitlerExpr(linkType, expr)
 
 	return CreateInstructionsFromRaws(raws)
 }
@@ -113,6 +113,7 @@ func createInstruction(s bpf.Instruction) string {
 	t := v.Type()
 	str := fmt.Sprintf("bpf.%s{", t.Name())
 
+	var comment string
 	// 遍历结构体字段
 	for i := 0; i < v.NumField(); i++ {
 		// 获取每个字段的结构体Field
@@ -126,6 +127,13 @@ func createInstruction(s bpf.Instruction) string {
 			}
 		}
 
+		// 拼接字段名和值到字符串
+		if t.Name() == "JumpIf" && f.Name == "Val" {
+			if v, ok := val.(uint32); ok && v > 15 {
+				comment += fmt.Sprintf(" %d = 0x%x,", val, val)
+			}
+		}
+
 		if t.Name() == "RetConstant" && f.Name == "Val" {
 			str += fmt.Sprintf("%s: 0x%x,", f.Name, val)
 			continue
@@ -136,6 +144,11 @@ func createInstruction(s bpf.Instruction) string {
 
 	str = strings.TrimSuffix(str, ",")
 	str += fmt.Sprintf("}")
+
+	if comment != "" {
+		comment = strings.TrimSuffix(comment, ",")
+		str += fmt.Sprintf(" // %s", comment)
+	}
 
 	return str
 }

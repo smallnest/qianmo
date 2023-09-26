@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/gopacket/layers"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/bpf"
 )
@@ -96,13 +97,13 @@ func printInstruction(s interface{}) string {
 }
 
 func TestParseExpr(t *testing.T) {
-	raws, err := ParseTcpdumpFitlerExpr("tcp port 8080")
+	raws, err := ParseTcpdumpFitlerExpr(layers.LinkTypeIPv4, "tcp port 8080")
 	require.NoError(t, err)
 
 	s := CreateInstructionsFromRaws(raws)
 	t.Log(s)
 
-	raws, err = ParseTcpdumpFitlerExpr("dst host 8.8.8.8 and icmp")
+	raws, err = ParseTcpdumpFitlerExpr(layers.LinkTypeIPv4, "dst host 8.8.8.8 and icmp")
 	require.NoError(t, err)
 
 	s = CreateInstructionsFromRaws(raws)
