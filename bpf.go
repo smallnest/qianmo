@@ -11,6 +11,17 @@ import (
 	"golang.org/x/net/bpf"
 )
 
+var jumpTests = map[bpf.JumpTest]string{
+	bpf.JumpEqual:          "JumpEqual",
+	bpf.JumpNotEqual:       "JumpNotEqual",
+	bpf.JumpGreaterThan:    "JumpGreaterThan",
+	bpf.JumpLessThan:       "JumpLessThan",
+	bpf.JumpGreaterOrEqual: "JumpGreaterOrEqual",
+	bpf.JumpLessOrEqual:    "JumpLessOrEqual",
+	bpf.JumpBitsSet:        "JumpBitsSet",
+	bpf.JumpBitsNotSet:     "JumpBitsNotSet",
+}
+
 // ParseTcpdumpFitler parses tcpdump filter to bpf.RawInstruction.
 // Example:
 // tcpdump -i eth0 -dd 'tcp and port 80'
@@ -131,6 +142,13 @@ func createInstruction(s bpf.Instruction) string {
 		if t.Name() == "JumpIf" && f.Name == "Val" {
 			if v, ok := val.(uint32); ok && v > 15 {
 				comment += fmt.Sprintf(" %d = 0x%x,", val, val)
+			}
+		}
+
+		if t.Name() == "JumpIf" && f.Name == "Cond" {
+			if v, ok := val.(bpf.JumpTest); ok {
+				str += fmt.Sprintf("%s: bpf.%s,", f.Name, jumpTests[bpf.JumpTest(v)])
+				continue
 			}
 		}
 
