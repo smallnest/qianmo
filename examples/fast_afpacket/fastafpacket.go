@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"reflect"
 	"time"
 
 	"github.com/google/gopacket"
@@ -55,14 +56,15 @@ func main() {
 	smac := iface.HardwareAddr
 	saddr := netaddr.MustParseIP(*srcaddr)
 
-	dstIfName, _, _, err := route.Route(*dstaddr)
+	_, gateway, _, err := route.Route(*dstaddr)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	dmac := dstIfName.HardwareAddr
 	daddr := netaddr.MustParseIP(*dstaddr)
+	fmt.Printf("dmac: %v\n", dmac.String())
 
-	filter := fmt.Sprintf("dst port %v and src portrange %v-%v and %v and dst %v", *dstport, *srcport, *srcport+5, "udp", saddr)
+	filter := fmt.Sprintf("dst port %v and src port %v and %v and dst %v", *dstport, *srcport, "udp", saddr)
 
 	allInstructions, err := qbpf.ParseTcpdumpFitlerExpr(layers.LinkTypeEthernet, filter)
 	if err != nil {
@@ -79,6 +81,9 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
+	conn.SetBPF(allInstructions)
+
 	// write to conn
 	{
 		go func() {
@@ -103,13 +108,18 @@ func main() {
 			for {
 				packet := make([]byte, 1024)
 
-				_, _, ts, err := conn.RecvTxTimestamps(packet)
+				_, naddr, ts, err := conn.RecvTxTimestamps(packet)
 				if err != nil {
 					logrus.Fatalf("tx receive msg: %v", err)
 				}
 
+				if isNil(naddr) {
+					continue
+				}
+
 				logrus.WithFields(logrus.Fields{
 					"probe":       ProbeID,
+					"addr":        naddr.String(),
 					"hardware_ns": ts.Hardware.UnixNano(),
 					"software_ns": ts.Software.UnixNano(),
 					"hardware":    ts.Hardware.UTC().Format(time.RFC3339Nano),
@@ -178,6 +188,10 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
+}
+
+func isNil(i interface{}) bool {
+	return i == nil || reflect.ValueOf(i).IsNil()
 }
 
 func encodePacket(smac net.HardwareAddr, saddr net.IP, sport int, dmac net.HardwareAddr, daddr net.IP, dport int) ([]byte, error) {

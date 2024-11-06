@@ -45,7 +45,7 @@ func Route(dst string) (iface *net.Interface, gateway, preferredSrc net.IP, err 
 			if ipNet != nil && ipNet.Contains(dstIP) {
 				// If the destination IP is in the same subnet, we can use this interface
 				preferredSrc = ipNet.IP
-				gatewayIP, err := GetGatewayIP(iface.Name)
+				gatewayIP, err := GetGatewayIP(preferredSrc.To4().String(), iface.Name)
 				if err != nil {
 					return nil, nil, nil, err
 				}
@@ -107,7 +107,7 @@ func RouteWithSrc(srcIPStr, dstIPStr string) (iface *net.Interface, gateway, pre
 		// If we found a preferred source, check the destination IP
 		if preferredSrc != nil && ipNet != nil && ipNet.Contains(dstIP) {
 			// Get gateway IP
-			gatewayIP, err := GetGatewayIP(iface.Name)
+			gatewayIP, err := GetGatewayIP(srcIPStr, iface.Name)
 			if err != nil {
 				return nil, nil, nil, err
 			}
@@ -120,4 +120,3 @@ func RouteWithSrc(srcIPStr, dstIPStr string) (iface *net.Interface, gateway, pre
 
 	return nil, nil, nil, fmt.Errorf("no suitable route found for src: %s and dst: %s", srcIPStr, dstIPStr)
 }
-

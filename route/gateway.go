@@ -2,12 +2,19 @@ package route
 
 import (
 	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 )
 
-// GetGatewayIP returns the gateway IP address for a given network interface name.
-func GetGatewayIP(interfaceName string) (string, error) {
+// GetGatewayIP returns the gateway IP address for a given IP and network interface name.
+func GetGatewayIP(ip, interfaceName string) (string, error) {
+	// 解析目标 IP
+	targetIP := net.ParseIP(ip)
+	if targetIP == nil {
+		return "", fmt.Errorf("invalid IP address: %s", ip)
+	}
+
 	// Use `ip route` command to get the gateway IP
 	cmd := exec.Command("ip", "route")
 	output, err := cmd.Output()
@@ -16,17 +23,55 @@ func GetGatewayIP(interfaceName string) (string, error) {
 	}
 
 	lines := strings.Split(string(output), "\n")
+	var defaultGateway string
+
+	// 首先查找特定网段的路由
 	for _, line := range lines {
-		if strings.Contains(line, interfaceName) {
-			fields := strings.Fields(line)
+		// 检查行是否包含指定的接口名
+		if !strings.Contains(line, interfaceName) {
+			continue
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+
+		// 检查是否是默认路由
+		if fields[0] == "default" {
+			// 保存默认网关
 			for i, field := range fields {
-				if field == "default" && i+2 < len(fields) {
-					return fields[i+2], nil // Gateway IP is the second field after "default"
+				if field == "via" && i+1 < len(fields) {
+					defaultGateway = fields[i+1]
+					break
+				}
+			}
+			continue
+		}
+
+		// 解析网段
+		_, ipNet, err := net.ParseCIDR(fields[0])
+		if err != nil {
+			continue
+		}
+
+		// 检查目标 IP 是否在这个网段内
+		if ipNet.Contains(targetIP) {
+			// 检查是否包含 "via" 关键字，它后面的字段就是网关IP
+			for i, field := range fields {
+				if field == "via" && i+1 < len(fields) {
+					return fields[i+1], nil
 				}
 			}
 		}
 	}
-	return "", fmt.Errorf("gateway not found for interface: %s", interfaceName)
+
+	// 如果找到了默认网关，则返回默认网关
+	if defaultGateway != "" {
+		return defaultGateway, nil
+	}
+
+	return "", fmt.Errorf("gateway not found for IP %s on interface: %s", ip, interfaceName)
 }
 
 // GetMacAddrFromArpCache returns the MAC address for a given IP address.
