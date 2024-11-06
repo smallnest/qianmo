@@ -53,6 +53,29 @@ func GetInterfaceByIP(ip string) (*net.Interface, error) {
 	return nil, ErrNotFound
 }
 
+// GetAddrs returns all IP addresses.
+func GetAddrs() ([]string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	var ips []string
+	for _, iface := range interfaces {
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, addr := range addrs {
+			if ipNet, ok := addr.(*net.IPNet); ok {
+				ips = append(ips, ipNet.IP.String())
+			}
+		}
+	}
+	return ips, nil
+}
+
 // GetNonLoopbackAddrs returns all non-loopback IP addresses.
 func GetNonLoopbackAddrs() ([]string, error) {
 	interfaces, err := net.Interfaces()
@@ -85,6 +108,7 @@ func GetNonLoopbackAddrs() ([]string, error) {
 }
 
 // GetHostIP returns the primary IP address of the host.
+// It returns the first non-loopback IPv4 address if available, otherwise the first non-loopback IPv6 address.
 func GetHostIP() (string, error) {
 	name, err := os.Hostname()
 	if err != nil {
