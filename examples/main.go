@@ -54,9 +54,13 @@ func main() {
 		panicErr(err)
 		fmt.Printf("non loopback addrs: %v\n", addrs)
 
-		port, err := qianmo.GetFreePort("udp")
+		tcpPort, err := qianmo.GetFreeTCPPort()
 		panicErr(err)
-		fmt.Printf("free udp port: %v\n", port)
+		fmt.Printf("free tcp port: %v\n", tcpPort)
+
+		udpPort, err := qianmo.GetFreeUDPPort()
+		panicErr(err)
+		fmt.Printf("free udp port: %v\n", udpPort)
 	}
 
 	// route

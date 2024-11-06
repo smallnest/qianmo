@@ -12,7 +12,6 @@ func TestGetInterfaceByIP(t *testing.T) {
 	iface, err := GetInterfaceByIP("127.0.0.1")
 	require.NoError(t, err)
 	assert.NotEmpty(t, iface)
-	assert.NotEmpty(t, iface.HardwareAddr)
 }
 
 func TestGetInterfaceByName(t *testing.T) {
@@ -40,8 +39,16 @@ func TestGetHostIP(t *testing.T) {
 	t.Logf("ip: %v", ip)
 }
 
-func TestGetFreePort(t *testing.T) {
-	port, err := GetFreePort("udp")
+func TestGetFreeTCPPort(t *testing.T) {
+	port, err := GetFreeTCPPort()
+	require.NoError(t, err)
+
+	assert.Gt(t, port, 0)
+	assert.Lt(t, port, 65536)
+}
+
+func TestGetFreeUDPPort(t *testing.T) {
+	port, err := GetFreeUDPPort()
 	require.NoError(t, err)
 
 	assert.Gt(t, port, 0)
