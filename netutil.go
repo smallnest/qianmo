@@ -6,6 +6,21 @@ import (
 	"strings"
 )
 
+// GetInterface returns the interface with the given name or IP address.
+func GetAllInterfaces() ([]string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	var ifaces = make([]string, 0, len(interfaces))
+	for _, iface := range interfaces {
+		ifaces = append(ifaces, iface.Name)
+	}
+
+	return ifaces, nil
+}
+
 // GetInterfaceByName returns the interface with the given name.
 func GetInterfaceByName(name string) (*net.Interface, error) {
 	if name == "" {
@@ -140,13 +155,13 @@ func GetHostIP() (string, error) {
 }
 
 // GetFreePort returns an available TCP port number.
-func GetFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+func GetFreePort(proto string) (int, error) {
+	addr, err := net.ResolveTCPAddr(proto, "localhost:0")
 	if err != nil {
 		return 0, err
 	}
 
-	l, err := net.ListenTCP("tcp", addr)
+	l, err := net.ListenTCP(proto, addr)
 	if err != nil {
 		return 0, err
 	}

@@ -41,7 +41,7 @@ func TestGetHostIP(t *testing.T) {
 }
 
 func TestGetFreePort(t *testing.T) {
-	port, err := GetFreePort()
+	port, err := GetFreePort("udp")
 	require.NoError(t, err)
 
 	assert.Gt(t, port, 0)

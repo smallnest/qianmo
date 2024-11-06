@@ -17,7 +17,7 @@ func TestRoute(t *testing.T) {
 	localIP, err := GetHostIP()
 	require.NoError(t, err)
 
-	iface, gateway, ip, err = RouteWithSrc(iface.HardwareAddr, localIP, "114.114.114.114")
+	iface, gateway, ip, err = RouteWithSrc(localIP, "114.114.114.114")
 	require.NoError(t, err)
 	assert.NotEmpty(t, iface, "iface: %s", iface)
 	assert.NotEmpty(t, gateway, "gateway: %s", gateway)

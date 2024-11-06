@@ -11,9 +11,8 @@ import (
 
 func TestRouteWithSrc(t *testing.T) {
 	type args struct {
-		input net.HardwareAddr
-		src   string
-		dst   string
+		src string
+		dst string
 	}
 	tests := []struct {
 		name             string
@@ -27,7 +26,7 @@ func TestRouteWithSrc(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotIface, gotGateway, gotPreferredSrc, err := RouteWithSrc(tt.args.input, tt.args.src, tt.args.dst)
+			gotIface, gotGateway, gotPreferredSrc, err := RouteWithSrc(tt.args.src, tt.args.dst)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RouteWithSrc() error = %v, wantErr %v", err, tt.wantErr)
 				return
