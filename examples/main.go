@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/smallnest/qianmo"
+	"github.com/smallnest/qianmo/route"
 )
 
 func panicErr(err error) {
@@ -65,14 +66,14 @@ func main() {
 
 	// route
 	{
-		iface, gateway, localIP, err := qianmo.Route(*dstIP)
+		iface, gateway, localIP, err := route.Route(*dstIP)
 		panicErr(err)
 
 		fmt.Printf("route: iface=%v, gateway=%v, localIP=%v\n", iface, gateway, localIP)
 
 		src, err := qianmo.GetHostIP()
 		panicErr(err)
-		iface, gateway, localIP, err = qianmo.RouteWithSrc(src, *dstIP)
+		iface, gateway, localIP, err = route.RouteWithSrc(src, *dstIP)
 		panicErr(err)
 		fmt.Printf("route with src: iface=%v, gateway=%v, localIP=%v\n", iface, gateway, localIP)
 	}
