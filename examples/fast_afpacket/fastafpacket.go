@@ -56,13 +56,13 @@ func main() {
 	smac := iface.HardwareAddr
 	saddr := netaddr.MustParseIP(*srcaddr)
 
-	_, gateway, _, err := route.Route(*dstaddr)
+	_, _, _, macAddr, err := route.Route(*dstaddr)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	dmac := dstIfName.HardwareAddr
+	dmac, _ := net.ParseMAC(macAddr)
 	daddr := netaddr.MustParseIP(*dstaddr)
-	fmt.Printf("dmac: %v\n", dmac.String())
+	fmt.Printf("dmac: %v\n", dmac)
 
 	filter := fmt.Sprintf("dst port %v and src port %v and %v and dst %v", *dstport, *srcport, "udp", saddr)
 

@@ -66,15 +66,15 @@ func main() {
 
 	// route
 	{
-		iface, gateway, localIP, err := route.Route(*dstIP)
+		iface, gateway, localIP, macAddr, err := route.Route(*dstIP)
 		panicErr(err)
 
-		fmt.Printf("route: iface=%v, gateway=%v, localIP=%v\n", iface, gateway, localIP)
+		fmt.Printf("route: iface=%v, gateway=%v, localIP=%v, macAddr=%v\n", iface, gateway, localIP, macAddr)
 
 		src, err := qianmo.GetHostIP()
 		panicErr(err)
-		iface, gateway, localIP, err = route.RouteWithSrc(src, *dstIP)
+		iface, gateway, localIP, macAddr, err = route.RouteWithSrc(src, *dstIP)
 		panicErr(err)
-		fmt.Printf("route with src: iface=%v, gateway=%v, localIP=%v\n", iface, gateway, localIP)
+		fmt.Printf("route with src: iface=%v, gateway=%v, localIP=%v, macAddr=%v\n", iface, gateway, localIP, macAddr)
 	}
 }

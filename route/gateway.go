@@ -5,11 +5,11 @@ import (
 	"net"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // GetGatewayIP returns the gateway IP address for a given IP and network interface name.
 func GetGatewayIP(ip, interfaceName string) (string, error) {
-	// 解析目标 IP
 	targetIP := net.ParseIP(ip)
 	if targetIP == nil {
 		return "", fmt.Errorf("invalid IP address: %s", ip)
@@ -25,9 +25,9 @@ func GetGatewayIP(ip, interfaceName string) (string, error) {
 	lines := strings.Split(string(output), "\n")
 	var defaultGateway string
 
-	// 首先查找特定网段的路由
+	// check each line for the interface name and the target IP
 	for _, line := range lines {
-		// 检查行是否包含指定的接口名
+		// Skip lines that don't contain the interface name
 		if !strings.Contains(line, interfaceName) {
 			continue
 		}
@@ -37,9 +37,9 @@ func GetGatewayIP(ip, interfaceName string) (string, error) {
 			continue
 		}
 
-		// 检查是否是默认路由
+		// check if the line contains the default gateway
 		if fields[0] == "default" {
-			// 保存默认网关
+			// check if the line contains the "via" keyword
 			for i, field := range fields {
 				if field == "via" && i+1 < len(fields) {
 					defaultGateway = fields[i+1]
@@ -49,15 +49,15 @@ func GetGatewayIP(ip, interfaceName string) (string, error) {
 			continue
 		}
 
-		// 解析网段
+		// Parse the network IP and mask
 		_, ipNet, err := net.ParseCIDR(fields[0])
 		if err != nil {
 			continue
 		}
 
-		// 检查目标 IP 是否在这个网段内
+		// Check if the target IP is in the network range
 		if ipNet.Contains(targetIP) {
-			// 检查是否包含 "via" 关键字，它后面的字段就是网关IP
+			// check if the line contains the "via" keyword, and return the gateway IP
 			for i, field := range fields {
 				if field == "via" && i+1 < len(fields) {
 					return fields[i+1], nil
@@ -66,7 +66,7 @@ func GetGatewayIP(ip, interfaceName string) (string, error) {
 		}
 	}
 
-	// 如果找到了默认网关，则返回默认网关
+	// Return the default gateway if no gateway was found for the target IP
 	if defaultGateway != "" {
 		return defaultGateway, nil
 	}
@@ -94,57 +94,15 @@ func GetMacAddrFromArpCache(ip string) (string, error) {
 	return "", fmt.Errorf("MAC address not found for IP: %s", ip)
 }
 
-// Use Route
-//
-// // getGatewayIPAndMAC returns the gateway IP and MAC address for a given remote IP address.
-// func getGatewayIPAndMAC(remoteIP string) (string, string, error) {
-// 	// Get the list of network interfaces
-// 	interfaces, err := net.Interfaces()
-// 	if err != nil {
-// 		return "", "", err
-// 	}
-
-// 	// Resolve the remote IP address
-// 	ip := net.ParseIP(remoteIP)
-// 	if ip == nil {
-// 		return "", "", fmt.Errorf("invalid remote IP address: %s", remoteIP)
-// 	}
-
-// 	// Iterate through the interfaces to find the correct gateway
-// 	for _, iface := range interfaces {
-// 		// Filter out non-up interfaces and loopback interfaces
-// 		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
-// 			continue
-// 		}
-
-// 		// Get the interface's addresses
-// 		addrs, err := iface.Addrs()
-// 		if err != nil {
-// 			continue
-// 		}
-
-// 		for _, addr := range addrs {
-// 			// Only handle IPv4 addresses
-// 			if ipNet, ok := addr.(*net.IPNet); ok && ipNet.IP.To4() != nil {
-// 				// Check if the remote IP is in the same subnet as the interface
-// 				if ipNet.Contains(ip) || ipNet.IP.Equal(ip) {
-// 					// If the remote IP is in the same subnet, get its MAC address
-// 					macAddr, err := GetMacAddress(remoteIP)
-// 					if err == nil {
-// 						return "", macAddr, nil // Return MAC address if found
-// 					}
-
-// 					// If not, get the gateway IP for this interface
-// 					gatewayIP, err := GetGatewayIP(iface.Name)
-// 					if err != nil {
-// 						return "", "", err
-// 					}
-
-// 					macAddr = iface.HardwareAddr.String() // MAC address of the interface
-// 					return gatewayIP, macAddr, nil
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return "", "", fmt.Errorf("no suitable gateway found for remote IP: %s", remoteIP)
-// }
+// GetMacAddr returns the MAC address for a given destination and gateway IP address.
+func GetMacAddr(dst, gateway string) (string, error) {
+	macAddr, err := GetMacAddrFromArpCache(gateway)
+	if err != nil && strings.Contains(err.Error(), "not found") {
+		conn, _ := net.DialTimeout("ip:icmp", dst, time.Second)
+		if conn != nil {
+			conn.Close()
+		}
+		macAddr, err = GetMacAddrFromArpCache(gateway)
+	}
+	return macAddr, err
+}
