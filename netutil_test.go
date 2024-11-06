@@ -1,102 +1,49 @@
 package qianmo
 
 import (
-	"errors"
+	"net"
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestInterfaceByMAC(t *testing.T) {
-	mac, err := MacByIP("127.0.0.1")
-	require.NoError(t, err)
-
-	iface, err := InterfaceByMAC(mac)
+func TestGetInterfaceByIP(t *testing.T) {
+	iface, err := GetInterfaceByIP("127.0.0.1")
 	require.NoError(t, err)
 	assert.NotEmpty(t, iface)
-	assert.Equal(t, mac.String(), iface.HardwareAddr.String())
-
+	assert.NotEmpty(t, iface.HardwareAddr)
 }
 
-func TestMacByName(t *testing.T) {
-	lookback, err := LoopbackInterface()
+func TestGetInterfaceByName(t *testing.T) {
+	// 先获取一个有效的接口名称
+	interfaces, err := net.Interfaces()
 	require.NoError(t, err)
+	require.NotEmpty(t, interfaces)
 
-	mac, err := MacByName(lookback.Name)
-
-	require.NoError(t, err)
-
-	iface, err := InterfaceByMAC(mac)
-	require.NoError(t, err)
-	assert.NotEmpty(t, iface)
-	assert.Equal(t, mac.String(), iface.HardwareAddr.String())
-}
-
-func TestInterfaceByName(t *testing.T) {
-	lookback, err := LoopbackInterface()
-	require.NoError(t, err)
-
-	iface, err := InterfaceByName(lookback.Name)
+	iface, err := GetInterfaceByName(interfaces[0].Name)
 	require.NoError(t, err)
 	assert.NotEmpty(t, iface)
 }
 
-func TestAddrs(t *testing.T) {
-	lookback, err := LoopbackInterface()
-	require.NoError(t, err)
-
-	addrs := Addrs(lookback.Name)
-	assert.Gt(t, len(addrs), 0)
-}
-
-func TestNonLoopbackAddrs(t *testing.T) {
-	addrs := NonLoopbackAddrs()
-	assert.NotEmpty(t, addrs)
-	t.Logf("addrs: %v", addrs)
-}
-
-func TestLoopbackAddrs(t *testing.T) {
-	addrs := LoopbackAddrs()
-	assert.NotEmpty(t, addrs)
-	t.Logf("addrs: %v", addrs)
-}
-
-func TestHostIP(t *testing.T) {
-	addrs, err := HostIP()
+func TestGetNonLoopbackAddrs(t *testing.T) {
+	addrs, err := GetNonLoopbackAddrs()
 	require.NoError(t, err)
 	assert.NotEmpty(t, addrs)
 	t.Logf("addrs: %v", addrs)
 }
 
-func TestHostFirstIPv4(t *testing.T) {
-	ip, err := HostFirstIPv4()
+func TestGetHostIP(t *testing.T) {
+	ip, err := GetHostIP()
 	require.NoError(t, err)
 	assert.NotEmpty(t, ip)
 	t.Logf("ip: %v", ip)
 }
 
-func TestHostFirstIPv6(t *testing.T) {
-	ip, err := HostFirstIPv6()
-	if errors.Is(err, ErrNotFound) {
-		t.Skip(err)
-	}
-	require.NoError(t, err)
-	assert.NotEmpty(t, ip)
-	t.Logf("ip: %v", ip)
-}
-
-func TestFreePort(t *testing.T) {
-	port, err := FreePort()
+func TestGetFreePort(t *testing.T) {
+	port, err := GetFreePort()
 	require.NoError(t, err)
 
 	assert.Gt(t, port, 0)
 	assert.Lt(t, port, 65536)
-}
-
-func TestNonLoopbackInterfaces(t *testing.T) {
-	ifaces, err := NonLoopbackInterfaces()
-	require.NoError(t, err)
-	assert.NotEmpty(t, ifaces)
-	t.Logf("ifaces: %v", ifaces)
 }

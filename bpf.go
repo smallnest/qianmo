@@ -22,7 +22,7 @@ var jumpTests = map[bpf.JumpTest]string{
 	bpf.JumpBitsNotSet:     "JumpBitsNotSet",
 }
 
-// ParseTcpdumpFitlerData parses tcpdump filter to bpf.RawInstruction.
+// ParseTcpdumpFitler parses tcpdump filter to bpf.RawInstruction.
 // Example:
 // tcpdump -i eth0 -dd 'tcp and port 80'
 func ParseTcpdumpFitlerData(data string) (raws []bpf.RawInstruction) {
