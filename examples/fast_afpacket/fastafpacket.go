@@ -7,22 +7,22 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"reflect"
 	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
 	"github.com/sirupsen/logrus"
 	"github.com/smallnest/qianmo"
-	qbpf "github.com/smallnest/qianmo/bpf"
 	"github.com/smallnest/qianmo/route"
 	fastafpacket "github.com/subspace-com/fast_afpacket"
+	"golang.org/x/net/bpf"
 	"golang.org/x/sys/unix"
 	"inet.af/netaddr"
 )
 
 var (
-	ProbeBypassPrefix = []byte("smallnest")
+	ProbeBypassPrefix = []byte{0x93, 0x72, 0xe7, 0x59, 0xc7, 0xb5, 0xaa, 0x73}
 
 	ProbeID uint64
 
@@ -34,21 +34,13 @@ var (
 func main() {
 	logrus.SetFormatter(logrus.StandardLogger().Formatter)
 
-	// ifname := flag.String("iface-name", "", "interface name to bind to")
-	// srcmac := flag.String("src-mac", "", "source MAC to use for packets")
 	srcaddr := flag.String("src", "", "source IPv4 address to use for packets")
 	srcport := flag.Int("sport", 60000, "source port to use for packets")
-	// dstmac := flag.String("dst-mac", "", "destination MAC to use for packets")
 	dstaddr := flag.String("dst", "", "destination IPv4 address to use for packets")
 	dstport := flag.Int("dport", 61000, "destination port to use for packets")
 	flag.Parse()
 
-	ifname, err := qianmo.GetInterfaceByIP(*srcaddr)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	iface, err := net.InterfaceByName(ifname.Name)
+	iface, err := qianmo.GetInterfaceByIP(*srcaddr)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -56,19 +48,29 @@ func main() {
 	smac := iface.HardwareAddr
 	saddr := netaddr.MustParseIP(*srcaddr)
 
-	_, _, _, macAddr, err := route.Route(*dstaddr)
+	_, _, _, macaddr, err := route.Route(*dstaddr)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	dmac, _ := net.ParseMAC(macAddr)
+	dmac, _ := net.ParseMAC(macaddr)
 	daddr := netaddr.MustParseIP(*dstaddr)
-	fmt.Printf("dmac: %v\n", dmac)
 
-	filter := fmt.Sprintf("dst port %v and src port %v and %v and dst %v", *dstport, *srcport, "udp", saddr)
+	filter := fmt.Sprintf("dst port %v and src portrange %v-%v and %v and dst %v", *dstport, *srcport, *srcport+5, "udp", saddr)
 
-	allInstructions, err := qbpf.ParseTcpdumpFitlerExpr(layers.LinkTypeEthernet, filter)
+	pcapBpf, err := pcap.CompileBPFFilter(layers.LinkTypeEthernet, 1024, filter)
 	if err != nil {
 		logrus.Fatal(err)
+	}
+
+	allInstructions := []bpf.RawInstruction{}
+	for _, ins := range pcapBpf {
+		oneInstruction := bpf.RawInstruction{
+			Op: ins.Code,
+			Jt: ins.Jt,
+			Jf: ins.Jf,
+			K:  ins.K,
+		}
+		allInstructions = append(allInstructions, oneInstruction)
 	}
 
 	config := fastafpacket.Config{
@@ -81,10 +83,6 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-
-	conn.SetBPF(allInstructions)
-
-	// write to conn
 	{
 		go func() {
 			ticker := time.NewTicker(1 * time.Second)
@@ -103,23 +101,17 @@ func main() {
 			}
 		}()
 
-		// read TxTimestamps from conn
 		go func() {
 			for {
 				packet := make([]byte, 1024)
 
-				_, naddr, ts, err := conn.RecvTxTimestamps(packet)
+				_, _, ts, err := conn.RecvTxTimestamps(packet)
 				if err != nil {
 					logrus.Fatalf("tx receive msg: %v", err)
 				}
 
-				if isNil(naddr) {
-					continue
-				}
-
 				logrus.WithFields(logrus.Fields{
 					"probe":       ProbeID,
-					"addr":        naddr.String(),
 					"hardware_ns": ts.Hardware.UnixNano(),
 					"software_ns": ts.Software.UnixNano(),
 					"hardware":    ts.Hardware.UTC().Format(time.RFC3339Nano),
@@ -129,7 +121,6 @@ func main() {
 		}()
 	}
 
-	// read from conn
 	{
 		go func() {
 			for {
@@ -160,7 +151,6 @@ func main() {
 		}()
 	}
 
-	// stats
 	{
 		go func() {
 			ticker := time.NewTicker(5 * time.Second)
@@ -188,10 +178,6 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
-}
-
-func isNil(i interface{}) bool {
-	return i == nil || reflect.ValueOf(i).IsNil()
 }
 
 func encodePacket(smac net.HardwareAddr, saddr net.IP, sport int, dmac net.HardwareAddr, daddr net.IP, dport int) ([]byte, error) {
