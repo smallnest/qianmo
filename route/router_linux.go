@@ -119,7 +119,7 @@ func RouteWithSrc(src, dst string) (iface *net.Interface, gateway, preferredSrc 
 		}
 
 		// If we found a preferred source, check the destination IP
-		if preferredSrc != nil && ipNet != nil && ipNet.Contains(dstIP) {
+		if preferredSrc != nil && ipNet != nil {
 			// Get gateway IP
 			gatewayIP, err := GetGatewayIP(src, iface.Name)
 			if err != nil {

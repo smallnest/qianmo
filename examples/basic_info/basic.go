@@ -10,7 +10,7 @@ import (
 
 func panicErr(err error) {
 	if err != nil {
-		panic("panic")
+		panic(err)
 	}
 }
 
